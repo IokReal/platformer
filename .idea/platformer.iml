@@ -6,7 +6,5 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="pythonProject" />
-    <orderEntry type="module" module-name="SuperMarioBoy-0.11" />
   </component>
 </module>

@@ -68,7 +68,7 @@ all_sprites = pygame.sprite.Group()
 running = True
 Elephant(all_sprites)
 total_time = 0
-bg = pygame.transform.scale(load_image(r'C:\Users\1\PycharmProjects\platformer\data\background.png'), (1700, 800))
+bg = pygame.transform.scale(load_image('background.png'), (1700, 800))
 screen.blit(bg, (0, 0))
 while running:
     all_sprites.update(total_time)

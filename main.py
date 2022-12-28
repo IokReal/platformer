@@ -61,9 +61,11 @@ class Elephant(pygame.sprite.Sprite):
         if True in list(pygame.key.get_pressed()):
             if list(pygame.key.get_pressed()).index(True) == 82:
                 self.uskor_y = -50
+                self.fall = True
                 self.moving = True
             elif list(pygame.key.get_pressed()).index(True) == 81:
                 self.uskor_y = 50
+                self.fall = False
                 self.moving = True
             else:
 

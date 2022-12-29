@@ -43,40 +43,57 @@ class Elephant(pygame.sprite.Sprite):
         self.rect.y = 550
         self.moving = False
 
-    def update(self, tot_time):
-        self.rect = self.rect.move(self.uskor_x, self.uskor_y // 10)
+        def update(self, tot_time):
+        self.rect = self.rect.move(0, self.uskor_y // 10)
         if self.fall:
             self.uskor_y = self.uskor_y + g
         if self.uskor_y > 50:
             self.uskor_y = 50
-        print(self.uskor_y)
+        #print(self.uskor_y)
         if self.moving:
-            if 0 <= tot_time <= 500:
-                self.image = Elephant.image
+            if self.right:
+                if 0 <= tot_time <= 500:
+                    self.image = Elephant.image
+                else:
+                    self.image = Elephant.image1
             else:
-                self.image = Elephant.image1
+                if 0 <= tot_time <= 500:
+                    self.image = pygame.transform.flip(Elephant.image, True, False)
+                else:
+                    self.image = pygame.transform.flip(Elephant.image1, True, False)
         else:
             self.image = Elephant.image2
-
         if True in list(pygame.key.get_pressed()):
             if list(pygame.key.get_pressed()).index(True) == 82:
                 self.uskor_y = -50
                 self.fall = True
                 self.moving = True
+
+                self.rect = self.rect.move(self.uskor_x, self.uskor_y // 10)
+
             elif list(pygame.key.get_pressed()).index(True) == 81:
                 self.uskor_y = 50
                 self.fall = False
                 self.moving = True
+
+                self.rect = self.rect.move(self.uskor_x, self.uskor_y // 10)
+
             else:
-
                 self.moving = False
-
             if list(pygame.key.get_pressed()).index(True) == 79:
+                self.right = True
                 self.uskor_x = 3
                 self.moving = True
+
+                self.rect = self.rect.move(self.uskor_x, self.uskor_y // 10)
+
             elif list(pygame.key.get_pressed()).index(True) == 80:
+                self.right = False
                 self.uskor_x = -3
                 self.moving = True
+
+                self.rect = self.rect.move(self.uskor_x, self.uskor_y // 10)
+
             else:
                 self.uskor_x = 0
         else:

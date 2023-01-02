@@ -8,7 +8,7 @@ size = width, height = 1700, 800
 screen = pygame.display.set_mode(size)
 pygame.display.set_caption("ESCAPE из гауптвахты")
 clock = pygame.time.Clock()
-fps = 30
+fps = 60
 g = 1
 
 def load_image(name, colorkey=None):
@@ -25,6 +25,16 @@ def load_image(name, colorkey=None):
     else:
         image = image.convert_alpha()
     return image
+
+class graund(pygame.sprite.Sprite):
+    image = load_image("dirt.png", colorkey=-1)
+    def __init__(self, *group):
+        super().__init__(*group)
+        self.image = Elephant.image
+        self.rect = self.image.get_rect()
+        self.rect.x = 100
+        self.rect.y = 550
+
 
 
 class Elephant(pygame.sprite.Sprite):
@@ -43,8 +53,8 @@ class Elephant(pygame.sprite.Sprite):
         self.rect.y = 550
         self.moving = False
 
-        def update(self, tot_time):
-        self.rect = self.rect.move(0, self.uskor_y // 10)
+    def update(self, tot_time):
+        self.rect = self.rect.move(self.uskor_x, self.uskor_y // 10)
         if self.fall:
             self.uskor_y = self.uskor_y + g
         if self.uskor_y > 50:
@@ -63,20 +73,20 @@ class Elephant(pygame.sprite.Sprite):
                     self.image = pygame.transform.flip(Elephant.image1, True, False)
         else:
             self.image = Elephant.image2
-        if True in list(pygame.key.get_pressed()):
+        if max(list(pygame.key.get_pressed())):
             if list(pygame.key.get_pressed()).index(True) == 82:
                 self.uskor_y = -50
                 self.fall = True
                 self.moving = True
 
-                self.rect = self.rect.move(self.uskor_x, self.uskor_y // 10)
+                #self.rect = self.rect.move(self.uskor_x, self.uskor_y // 10)
 
             elif list(pygame.key.get_pressed()).index(True) == 81:
                 self.uskor_y = 50
                 self.fall = False
                 self.moving = True
 
-                self.rect = self.rect.move(self.uskor_x, self.uskor_y // 10)
+                #self.rect = self.rect.move(self.uskor_x, self.uskor_y // 10)
 
             else:
                 self.moving = False
@@ -85,22 +95,25 @@ class Elephant(pygame.sprite.Sprite):
                 self.uskor_x = 3
                 self.moving = True
 
-                self.rect = self.rect.move(self.uskor_x, self.uskor_y // 10)
+                #self.rect = self.rect.move(self.uskor_x, self.uskor_y // 10)
 
             elif list(pygame.key.get_pressed()).index(True) == 80:
                 self.right = False
                 self.uskor_x = -3
                 self.moving = True
 
-                self.rect = self.rect.move(self.uskor_x, self.uskor_y // 10)
+                #self.rect = self.rect.move(self.uskor_x, self.uskor_y // 10)
 
             else:
                 self.uskor_x = 0
         else:
+            self.uskor_x = 0
             self.moving = False
 
 
 all_sprites = pygame.sprite.Group()
+earth = pygame.sprite.Group()
+#a = graund(earth)
 running = True
 pleer = Elephant(all_sprites)
 total_time = 0
@@ -117,6 +130,7 @@ while running:
         total_time = 0
     clock.tick(fps)
     all_sprites.update(total_time)
+    earth.draw(screen)
     all_sprites.draw(screen)
     pygame.display.flip()
 pygame.quit()

@@ -30,7 +30,7 @@ class graund(pygame.sprite.Sprite):
     image = load_image("dirt.png", colorkey=-1)
     def __init__(self, *group):
         super().__init__(*group)
-        self.image = Elephant.image
+        self.image = graund.image
         self.rect = self.image.get_rect()
         self.rect.x = 100
         self.rect.y = 550
@@ -49,6 +49,7 @@ class Elephant(pygame.sprite.Sprite):
         super().__init__(*group)
         self.image = Elephant.image
         self.rect = self.image.get_rect()
+        self.image = graund.image
         self.rect.x = 100
         self.rect.y = 550
         self.moving = False
@@ -113,7 +114,7 @@ class Elephant(pygame.sprite.Sprite):
 
 all_sprites = pygame.sprite.Group()
 earth = pygame.sprite.Group()
-#a = graund(earth)
+a = graund(earth)
 running = True
 pleer = Elephant(all_sprites)
 total_time = 0

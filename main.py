@@ -4,7 +4,7 @@ import pygame
 
 
 pygame.init()
-size = width, height = 1700, 800
+size = width, height = 900, 900
 screen = pygame.display.set_mode(size)
 pygame.display.set_caption("ESCAPE из гауптвахты")
 clock = pygame.time.Clock()
@@ -44,7 +44,11 @@ class Elephant(pygame.sprite.Sprite):
     uskor_x = 0
     uskor_y = 0
     fall = False
-
+    right = False
+    up = False
+    left = False
+    right = False
+    down = False
     def __init__(self, *group):
         super().__init__(*group)
         self.image = Elephant.image
@@ -53,6 +57,7 @@ class Elephant(pygame.sprite.Sprite):
         self.rect.x = 100
         self.rect.y = 550
         self.moving = False
+
 
     def update(self, tot_time):
         self.rect = self.rect.move(self.uskor_x, self.uskor_y // 10)
@@ -74,16 +79,20 @@ class Elephant(pygame.sprite.Sprite):
                     self.image = pygame.transform.flip(Elephant.image1, True, False)
         else:
             self.image = Elephant.image2
+
+        #if self.rect.colliderect(self.earth):
+        #    self.fall = False
+
         if max(list(pygame.key.get_pressed())):
-            if list(pygame.key.get_pressed()).index(True) == 82:
+            if self.up:
                 self.uskor_y = -50
                 self.fall = True
                 self.moving = True
 
                 #self.rect = self.rect.move(self.uskor_x, self.uskor_y // 10)
 
-            elif list(pygame.key.get_pressed()).index(True) == 81:
-                self.uskor_y = 50
+            elif self.down:
+                self.uskor_y = 0
                 self.fall = False
                 self.moving = True
 
@@ -91,14 +100,14 @@ class Elephant(pygame.sprite.Sprite):
 
             else:
                 self.moving = False
-            if list(pygame.key.get_pressed()).index(True) == 79:
+            if self.right:
                 self.right = True
                 self.uskor_x = 3
                 self.moving = True
 
                 #self.rect = self.rect.move(self.uskor_x, self.uskor_y // 10)
 
-            elif list(pygame.key.get_pressed()).index(True) == 80:
+            elif self.left:
                 self.right = False
                 self.uskor_x = -3
                 self.moving = True
@@ -108,7 +117,7 @@ class Elephant(pygame.sprite.Sprite):
             else:
                 self.uskor_x = 0
         else:
-            self.uskor_x = 0
+            self.uskor_x = self.uskor_x * self.fall
             self.moving = False
 
 
@@ -117,6 +126,7 @@ earth = pygame.sprite.Group()
 a = graund(earth)
 running = True
 pleer = Elephant(all_sprites)
+pleer.earth = earth
 total_time = 0
 #bg = pygame.transform.scale(load_image('background.png'), (1700, 800))
 #screen.blit(bg, (0, 0))
@@ -124,6 +134,25 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_UP:
+            pleer.up = True
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_LEFT:
+            pleer.left = True
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT:
+            pleer.right = True
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN:
+            pleer.down = True
+
+        if event.type == pygame.KEYUP and event.key == pygame.K_UP:
+            pleer.up = False
+        if event.type == pygame.KEYUP and event.key == pygame.K_RIGHT:
+            pleer.right = False
+        if event.type == pygame.KEYUP and event.key == pygame.K_LEFT:
+            pleer.left = False
+        if event.type == pygame.KEYUP and event.key == pygame.K_DOWN:
+            pleer.down = False
+
     screen.fill(pygame.Color("white"))
     #screen.blit(bg, (0, 0))
     total_time += clock.get_time()

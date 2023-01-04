@@ -1,6 +1,9 @@
 import os
 import sys
 import pygame
+from pygame import *
+from player import *
+from blocks import *
 
 
 pygame.init()
@@ -9,7 +12,7 @@ screen = pygame.display.set_mode(size)
 pygame.display.set_caption("ESCAPE из гауптвахты")
 clock = pygame.time.Clock()
 fps = 60
-g = 1
+g = 10
 
 def load_image(name, colorkey=None):
     fullname = os.path.join("data", name)
@@ -26,6 +29,15 @@ def load_image(name, colorkey=None):
         image = image.convert_alpha()
     return image
 
+def load_map(name):
+    fullname = os.path.join("maps", name)
+    if not os.path.isfile(fullname):
+        print("файл не существует")
+        sys.exit()
+    else:
+        maps = open(fullname)
+    return maps
+
 class graund(pygame.sprite.Sprite):
     image = load_image("dirt.png", colorkey=-1)
     def __init__(self, *group):
@@ -35,7 +47,31 @@ class graund(pygame.sprite.Sprite):
         self.rect.x = 100
         self.rect.y = 550
 
+'''
+class Camera(object):
+    def __init__(self, camera_func, width, height):
+        self.camera_func = camera_func
+        self.state = Rect(0, 0, width, height)
 
+    def apply(self, target):
+        return target.rect.move(self.state.topleft)
+
+    def update(self, target):
+        self.state = self.camera_func(self.state, target.rect)
+
+
+def camera_configure(camera, target_rect):
+    l, t, _, _ = target_rect
+    _, _, w, h = camera
+    l, t = -l + width / 2, -t + width / 2
+
+    l = min(0, l)  # Не движемся дальше левой границы
+    l = max(-(camera.width - width), l)  # Не движемся дальше правой границы
+    t = max(-(camera.height - height), t)  # Не движемся дальше нижней границы
+    t = min(0, t)  # Не движемся дальше верхней границы
+
+    return Rect(l, t, w, h)
+''' # огрызок с кодом от камеры
 
 class Elephant(pygame.sprite.Sprite):
     image = load_image("elephant.png", colorkey=-1)
@@ -60,11 +96,17 @@ class Elephant(pygame.sprite.Sprite):
 
 
     def update(self, tot_time):
-        self.rect = self.rect.move(self.uskor_x, self.uskor_y // 10)
+        self.rect = self.rect.move(self.uskor_x // 100, self.uskor_y // 100)
+        if self.rect.y > 900:
+            self.rect.y = 0
         if self.fall:
             self.uskor_y = self.uskor_y + g
-        if self.uskor_y > 50:
-            self.uskor_y = 50
+            if self.uskor_x > 0:
+                self.uskor_x -= 1
+            elif self.uskor_x < 0:
+                self.uskor_x += 1
+        if self.uskor_y > 500:
+            self.uskor_y = 500
         #print(self.uskor_y)
         if self.moving:
             if self.right:
@@ -84,8 +126,8 @@ class Elephant(pygame.sprite.Sprite):
         #    self.fall = False
 
         if max(list(pygame.key.get_pressed())):
-            if self.up:
-                self.uskor_y = -50
+            if self.up and not self.fall:
+                self.uskor_y = -500
                 self.fall = True
                 self.moving = True
 
@@ -102,14 +144,14 @@ class Elephant(pygame.sprite.Sprite):
                 self.moving = False
             if self.right:
                 self.right = True
-                self.uskor_x = 3
+                self.uskor_x = 300
                 self.moving = True
 
                 #self.rect = self.rect.move(self.uskor_x, self.uskor_y // 10)
 
             elif self.left:
                 self.right = False
-                self.uskor_x = -3
+                self.uskor_x = -300
                 self.moving = True
 
                 #self.rect = self.rect.move(self.uskor_x, self.uskor_y // 10)
@@ -130,6 +172,7 @@ pleer.earth = earth
 total_time = 0
 #bg = pygame.transform.scale(load_image('background.png'), (1700, 800))
 #screen.blit(bg, (0, 0))
+#camera = Camera(camera_configure, 10, 10)
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -161,6 +204,7 @@ while running:
     clock.tick(fps)
     all_sprites.update(total_time)
     earth.draw(screen)
+    #camera.update(pleer)
     all_sprites.draw(screen)
     pygame.display.flip()
 pygame.quit()

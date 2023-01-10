@@ -1,6 +1,7 @@
 import os
 import sys
 import pygame
+import random
 from pygame import *
 
 
@@ -60,6 +61,8 @@ def generate_level(level):
                 Tile('deep', x, y)
             if level[y][x] == '#':
                 Tile('dirt', x, y)
+            if level[y][x] == "!":
+                Tile("barrier", x, y)
     return x, y
 
 class Camera:
@@ -71,18 +74,12 @@ class Camera:
 
     # сдвинуть объект obj на смещение камеры
     def apply(self, obj):
+        #print(type(obj) == Spoody, "TYPE")
         obj.rect.x += self.dx
-        # вычислим координату клитки, если она уехала влево за границу экрана
-        if obj.rect.x < -obj.rect.width:
-            obj.rect.x += (self.field_size[0] + 1) * obj.rect.width
-        # вычислим координату клитки, если она уехала вправо за границу экрана
-        if obj.rect.x >= (self.field_size[0]) * obj.rect.width:
-            obj.rect.x += -obj.rect.width * (1 + self.field_size[0])
-        obj.rect.y += self.dy
-        # вычислим координату клитки, если она уехала вверх за границу экрана
+        # вычислим координату клeтки, если она уехала вверх за границу экрана
         if obj.rect.y < -obj.rect.height:
             obj.rect.y += (self.field_size[1] + 1) * obj.rect.height
-        # вычислим координату клитки, если она уехала вниз за границу экрана
+        # вычислим координату клeтки, если она уехала вниз за границу экрана
         if obj.rect.y >= (self.field_size[1]) * obj.rect.height:
             obj.rect.y += -obj.rect.height * (1 + self.field_size[1])
 
@@ -95,12 +92,10 @@ class Tile(pygame.sprite.Sprite):
     def __init__(self, tile_type, pos_x, pos_y):
         super().__init__(tiles_group, all_sprites)
         self.image = tile_images[tile_type]
-        print(self.image.get_rect())
         if tile_type == "deep":
             self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
-        else:
+        elif tile_type:
             self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
-        print(self.rect, pos_x, "TILE RECTANGLE")
 
 class Elephant(pygame.sprite.Sprite):
     image = load_image("elephant.png", colorkey=-1)
@@ -119,25 +114,19 @@ class Elephant(pygame.sprite.Sprite):
         self.image = Elephant.image
         self.rect = self.image.get_rect()
         self.image = Elephant.image
-        self.rect.x = 800
-        self.rect.y = 530
+        self.rect.x = 200
+        self.rect.y = 440
         self.moving = False
         self.cur_image = Elephant.image2
         self.mask = pygame.mask.from_surface(self.image)
-        print("START:", self.fall, self.down, self.uskor_y, self.uskor_x)
 
 
     def update(self, tot_time):
         if pygame.sprite.spritecollideany(self, tiles_group) and self.fall:
-            print(pygame.sprite.spritecollideany(self, tiles_group).rect.y)
-            print("RECT", self.rect)
-            #print(pygame.sprite.collide_mask(self, pygame.sprite.spritecollideany(self, tiles_group)))
             if pygame.sprite.spritecollideany(self, tiles_group).rect.y > self.rect.y:
                 self.rect = self.rect.move(self.uskor_x // 100, self.uskor_y // 100)
                 self.fall = False
                 self.uskor_y = 0
-            #if pygame.sprite.spritecollideany(self, tiles_group).rect.y - self.rect.y < self.rect[0] - self.rect[1]:
-                #print(pygame.sprite.spritecollideany(self, tiles_group).rect.y - self.rect.y)
         else:
             self.fall = True
             self.rect = self.rect.move(self.uskor_x // 100, self.uskor_y // 100)
@@ -195,6 +184,52 @@ class Elephant(pygame.sprite.Sprite):
             self.uskor_x = self.uskor_x * self.fall
             self.moving = False
 
+class Spoody(pygame.sprite.Sprite):
+    image_go = load_image("spoody.png", colorkey=-1)
+    image_attack = load_image("spoody_atack.png", colorkey=-1)
+    image_go_back = pygame.transform.flip(image_go, True, False)
+    image_attack_back = pygame.transform.flip(image_attack, True, False)
+    def __init__(self, x, lim, *group): # x - номер блока, который является нулём по оcи X для данного объекта спуди
+        super().__init__(*group)
+        self.x = x
+        self.image = Spoody.image_go
+        self.rect = self.image.get_rect()
+        self.start_y = 385
+        self.start_x = list(tiles_group)[self.x].rect.x
+        self.rect.x = self.start_x
+        self.rect.y = 465
+        self.limit = lim
+        self.a_y = -4
+        self.a_x = 4
+
+    def update(self, tot_time):
+        #print("current", list(tiles_group)[20].rect.x,
+              #"SPOODY", self.rect.x, self.start_x + self.limit, self.start_x - self.limit)
+        self.start_y = 385#list(tiles_group)[20].rect.y
+        self.start_x = list(tiles_group)[self.x].rect.x
+        self.rect = self.rect.move(self.a_x, self.a_y)
+        if self.rect.x > self.start_x + self.limit:
+            self.a_x = -4
+        elif self.rect.x < self.start_x - self.limit:
+            #print("по ОСИ")
+            self.a_x = 4
+            self.image = Spoody.image_go_back
+        if self.rect.y < self.start_y - 5:
+            self.a_y = 4
+        elif self.rect.y >= self.start_y + 20:
+            self.a_y = -4
+
+        # атака
+        if 0 < self.rect.x - pleer.rect.x < 150 and self.a_x < 0:
+            self.image = Spoody.image_attack
+            print("атака")
+        elif -150 < self.rect.x - pleer.rect.x < 0 and self.a_x > 0:
+            self.image = Spoody.image_attack_back
+        else:
+            if self.a_x < 0:
+                self.image = Spoody.image_go
+            else:
+                self.image = Spoody.image_go_back
 
 all_sprites = pygame.sprite.Group()
 earth = pygame.sprite.Group()
@@ -204,12 +239,14 @@ pleer.earth = earth
 total_time = 0
 
 tiles_group = pygame.sprite.Group()
-tile_images = {'dirt': load_image('dirt.png', colorkey=-1), 'deep': load_image('deep.png', colorkey=-1)}
+tile_images = {'dirt': load_image('dirt.png', colorkey=-1), 'deep': load_image('deep.png', colorkey=-1),
+               "barrier": load_image("barrier.png", colorkey=-1)}
 tile_width = 141
 tile_height = 64
 level_x, level_y = generate_level(load_level("1.txt"))
-print(level_x, level_y, "LEVELS")
-print(level_x, "LEVELX")
+spoodies = [(56, 350), (69, 200), (79, 200), (91, 150)]
+for spoody in spoodies:
+    Spoody(spoody[0], spoody[1], all_sprites)
 camera = Camera((level_x, level_y))
 bg = pygame.transform.scale(load_image('background.png'), (1700, 800))
 
@@ -249,4 +286,5 @@ while running:
     earth.draw(screen)
     all_sprites.draw(screen)
     pygame.display.flip()
+    
 pygame.quit()

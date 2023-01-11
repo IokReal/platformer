@@ -136,11 +136,22 @@ class Elephant(pygame.sprite.Sprite):
         self.im2 = Elephant.image2
 
     def update(self, tot_time):
-        if pygame.sprite.spritecollideany(self, tiles_group) and self.fall:
+        if pygame.sprite.spritecollideany(self,
+                                          tiles_group) and self.fall:  # обработка соприкосновений с блоками по вертикали
+            print("CONTACT", self.fall)
             if pygame.sprite.spritecollideany(self, tiles_group).rect.y > self.rect.y:
+                print("WORK")
                 self.rect = self.rect.move(self.uskor_x // 100, self.uskor_y // 100)
                 self.fall = False
                 self.uskor_y = 0
+            elif pygame.sprite.spritecollideany(self, tiles_group).rect.y < self.rect.y and \
+                    self.rect.y - pygame.sprite.spritecollideany(self,
+                                                                 tiles_group).rect.y < pygame.sprite.spritecollideany(
+                self, tiles_group).rect.height:
+                self.fall = True
+                self.rect.y = pygame.sprite.spritecollideany(self, tiles_group).rect.y + pygame.sprite.spritecollideany(
+                    self, tiles_group).rect.height
+                self.uskor_y = 0  # /= 2
         else:
             self.fall = True
             self.rect = self.rect.move(self.uskor_x // 100, self.uskor_y // 100)
@@ -188,8 +199,6 @@ class Elephant(pygame.sprite.Sprite):
                         #if not self.moving:
                             self.rect.x -= Elephant.image_hit.get_rect().width - Elephant.image2.get_rect().width
                             self.changed_x = True
-
-
             if self.up and not self.fall:
                 self.uskor_y = -500
                 self.fall = True

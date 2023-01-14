@@ -1,9 +1,23 @@
 import os
 import sys
 import pygame
+import math as matematics
 import random
 from pygame import *
 
+pygame.init()
+pygame.key.set_repeat(200, 70)
+size = WIDTH, HEIGHT = 1560, 800
+screen = pygame.display.set_mode(size)
+pygame.display.set_caption("ESCAPE из гауптвахты")
+clock = pygame.time.Clock()
+fps = 120
+g = 10
+
+
+# Загрузка музыки
+# pygame.mixer.music.load(r"C:\Users\1\PycharmProjects\my_test_of_project\music\zoo.mp3")
+# pygame.mixer.music.play()
 
 def load_image(name, colorkey=None):
     fullname = os.path.join("data", name)
@@ -21,40 +35,6 @@ def load_image(name, colorkey=None):
     return image
 
 
-pygame.init()
-pygame.key.set_repeat(200, 70)
-size = WIDTH, HEIGHT = 1560, 800
-screen = pygame.display.set_mode(size)
-pygame.display.set_caption("ESCAPE из гауптвахты")
-clock = pygame.time.Clock()
-tiles_group = pygame.sprite.Group()
-all_sprites = pygame.sprite.Group()
-tile_images = {'roof': load_image('roof.png'), 'wall': load_image('wall.png'),
-                   "barrier": load_image("barrier.png", colorkey=-1), "pipe": load_image("pipe.png", colorkey=-1)}
-tile_width = 141
-tile_height = 64
-fps = 120
-g = 10
-
-# Загрузка музыки
-#pygame.mixer.music.load(r"C:\Users\1\PycharmProjects\my_test_of_project\music\zoo.mp3")
-#pygame.mixer.music.play()
-
-'''def load_image(name, colorkey=None):
-    fullname = os.path.join("data", name)
-    if not os.path.isfile(fullname):
-        print("файл не существует")
-        sys.exit()
-    image = pygame.image.load(fullname).convert()
-    if colorkey is not None:
-        image = image.convert()
-        if colorkey == -1:
-            colorkey = image.get_at((0, 0))
-        image.set_colorkey(colorkey)
-    else:
-        image = image.convert_alpha()
-    return image'''
-
 def load_level(filename):
     filename = "maps/" + filename
     # читаем уровень, убирая символы перевода строки
@@ -67,6 +47,7 @@ def load_level(filename):
     # дополняем каждую строку пустыми клетками ('.')
     return list(map(lambda x: x.ljust(max_width, '.'), level_map))
 
+
 def load_map(name):
     fullname = os.path.join("maps", name)
     if not os.path.isfile(fullname):
@@ -76,19 +57,22 @@ def load_map(name):
         maps = open(fullname)
     return maps
 
+
 def generate_level(level):
-    new_player, x, y = Elephant(), None, None
+    x, y = None, None
     for y in range(len(level)):
+        s = [True, 0, 0] # s[0]-системное s[1]-начало s[2]-длина
         for x in range(len(level[y])):
             if level[y][x] == '.':
-                Tile('wall', x, y)
+                Tile('deep', x, y)
             if level[y][x] == '#':
-                Tile('roof', x, y)
+                Tile('dirt', x, y)
             if level[y][x] == "!":
                 Tile("barrier", x, y)
-            if level[y][x] == "@":
-                Tile("pipe", x, y)
+            if level[y][x] == 'f':
+                Tile("finish", x, y)
     return x, y
+
 
 class Camera:
     # зададим начальный сдвиг камеры и размер поля для возможности реализации циклического сдвига
@@ -99,7 +83,7 @@ class Camera:
 
     # сдвинуть объект obj на смещение камеры
     def apply(self, obj):
-        #print(type(obj) == Spoody, "TYPE")
+        # print(type(obj) == Spoody, "TYPE")
         obj.rect.x += self.dx
         # вычислим координату клeтки, если она уехала вверх за границу экрана
         if type(obj) != Bullet:
@@ -111,12 +95,12 @@ class Camera:
 
     # позиционировать камеру на объекте target
     def update(self, target):
-        #if type(target) == Elephant:
-            #if target.changed_x != True:
-                #print("THIS")
-                #self.dx = -(target.rect.x + target.rect.w // 2 - WIDTH // 2)
-        #else:
-            #if pleer.changed_x != True:
+        # if type(target) == Elephant:
+        # if target.changed_x != True:
+        # print("THIS")
+        # self.dx = -(target.rect.x + target.rect.w // 2 - WIDTH // 2)
+        # else:
+        # if pleer.changed_x != True:
         self.dx = -(target.rect.x + target.rect.w // 2 - WIDTH // 2)
         if type(target) != Bullet:
             self.dy = -(target.rect.y + target.rect.h // 2 - HEIGHT // 2)
@@ -126,13 +110,9 @@ class Tile(pygame.sprite.Sprite):
     def __init__(self, tile_type, pos_x, pos_y):
         super().__init__(tiles_group, all_sprites)
         self.image = tile_images[tile_type]
-        if tile_type == "deep":
-            self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
-        elif tile_type == "pipe":
-            print("PIPE")
-            self.rect = self.image.get_rect().move(tile_width * pos_x, 0)
-        elif tile_type:
-            self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
+        self.pos_x = pos_x * tile_width
+        self.pos_y = pos_y * tile_height
+        self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
 
 
 class Elephant(pygame.sprite.Sprite):
@@ -150,13 +130,16 @@ class Elephant(pygame.sprite.Sprite):
     left = False
     right = False
     down = False
+
     def __init__(self, *group):
         super().__init__(*group)
-        #self.image = Elephant.image
+        # self.image = Elephant.image
         self.image = Elephant.image
         self.rect = self.image.get_rect()
         self.rect.x = 200
         self.rect.y = 440
+        self.pos_x = 200
+        self.pos_y = 440
         self.moving = False
         self.cur_image = Elephant.image2
         self.mask = pygame.mask.from_surface(self.image)
@@ -166,26 +149,29 @@ class Elephant(pygame.sprite.Sprite):
         self.im2 = Elephant.image2
 
     def update(self, tot_time):
-        if pygame.sprite.spritecollideany(self, tiles_group):
-            if pygame.sprite.spritecollideany(self, tiles_group).rect.x - self.rect.x <= self.rect.width and \
-                    pygame.sprite.spritecollideany(self, tiles_group).rect.y <= self.rect.y:
-                self.right = False
-                #print("горизонтально вправо")
-        if pygame.sprite.spritecollideany(self, tiles_group) and self.fall: # обработка соприкосновений с блоками по вертикали
-            #print("CONTACT", self.fall)
+        platform = pygame.sprite.spritecollideany(self, tiles_group)
+        if platform:
+            print('"координаты"', platform.pos_x,  self.pos_x)
+            if 80 > matematics.fabs(self.rect.y - platform.rect.y):
+                self.uskor_x = -self.uskor_x
+
+
+        if pygame.sprite.spritecollideany(
+                self, tiles_group) and self.fall:  # обработка соприкосновений с блоками по вертикали
             if pygame.sprite.spritecollideany(self, tiles_group).rect.y > self.rect.y:
-                #print("WORK")
                 self.rect = self.rect.move(self.uskor_x // 100, self.uskor_y // 100)
+                self.pos_x += self.uskor_y // 100
+                self.pos_y += self.uskor_x // 100
                 self.fall = False
                 self.uskor_y = 0
-            elif pygame.sprite.spritecollideany(self, tiles_group).rect.y < self.rect.y and\
-                    self.rect.y - pygame.sprite.spritecollideany(self, tiles_group).rect.y < pygame.sprite.spritecollideany(self, tiles_group).rect.height:
-                #print("удар головой")
+            elif pygame.sprite.spritecollideany(self, tiles_group).rect.y < self.rect.y and \
+                    self.rect.y - pygame.sprite.spritecollideany(self,
+                                                                 tiles_group).rect.y < pygame.sprite.spritecollideany(
+                self, tiles_group).rect.height:
                 self.fall = True
-                #self.uskor_y = 0
-                self.rect.y = pygame.sprite.spritecollideany(self, tiles_group).rect.y + pygame.sprite.spritecollideany(self, tiles_group).rect.height
-                self.uskor_y = 0 #/= 2
-                #self.rect = self.rect.move(self.uskor_x // 100, self.uskor_y // 100)
+                self.rect.y = pygame.sprite.spritecollideany(self, tiles_group).rect.y + pygame.sprite.spritecollideany(
+                    self, tiles_group).rect.height
+                self.uskor_y = 0  # /= 2
         else:
             self.fall = True
             self.rect = self.rect.move(self.uskor_x // 100, self.uskor_y // 100)
@@ -199,8 +185,6 @@ class Elephant(pygame.sprite.Sprite):
                 self.uskor_x += 1
         if self.uskor_y > 500:
             self.uskor_y = 500
-
-
 
         if self.moving:
             if True in list(pygame.key.get_pressed()):
@@ -230,11 +214,9 @@ class Elephant(pygame.sprite.Sprite):
                     self.image = pygame.transform.flip(Elephant.image_hit, True, False)
                     if not self.changed_x:
                         if pygame.sprite.spritecollideany(self, tiles_group):
-                        #if not self.moving:
+                            # if not self.moving:
                             self.rect.x -= Elephant.image_hit.get_rect().width - Elephant.image2.get_rect().width
                             self.changed_x = True
-
-
             if self.up and not self.fall:
                 self.uskor_y = -500
                 self.fall = True
@@ -268,13 +250,18 @@ class Spoody(pygame.sprite.Sprite):
     image_attack = load_image("spoody_atack.png", colorkey=-1)
     image_go_back = pygame.transform.flip(image_go, True, False)
     image_attack_back = pygame.transform.flip(image_attack, True, False)
-    def __init__(self, x, lim, *group): # x - номер блока, который является нулём по оcи X для данного объекта спуди
+
+    def __init__(self, x, lim, *group):  # x - номер блока, который является нулём по оcи X для данного объекта спуди
         super().__init__(*group)
         self.x = x
-        self.image = Spoody.image_go
+        self.image = self.image_go
         self.rect = self.image.get_rect()
         self.start_y = 385
-        self.start_x = list(tiles_group)[self.x].rect.x
+        try:
+            self.start_x = list(tiles_group)[self.x].rect.x
+        except:
+            self.start_x = 50
+            print(self.x)
         self.rect.x = self.start_x
         self.rect.y = 465
         self.limit = lim
@@ -282,15 +269,15 @@ class Spoody(pygame.sprite.Sprite):
         self.a_x = 4
 
     def update(self, tot_time):
-        #print("current", list(tiles_group)[20].rect.x,
-              #"SPOODY", self.rect.x, self.start_x + self.limit, self.start_x - self.limit)
-        self.start_y = 385#list(tiles_group)[20].rect.y
+        # print("current", list(tiles_group)[20].rect.x,
+        # "SPOODY", self.rect.x, self.start_x + self.limit, self.start_x - self.limit)
+        self.start_y = 385  # list(tiles_group)[20].rect.y
         self.start_x = list(tiles_group)[self.x].rect.x
         self.rect = self.rect.move(self.a_x, self.a_y)
         if self.rect.x > self.start_x + self.limit:
             self.a_x = -4
         elif self.rect.x < self.start_x - self.limit:
-            #print("по ОСИ")
+            # print("по ОСИ")
             self.a_x = 4
             self.image = Spoody.image_go_back
         if self.rect.y < self.start_y - 5:
@@ -309,6 +296,7 @@ class Spoody(pygame.sprite.Sprite):
             else:
                 self.image = Spoody.image_go_back
 
+
 class Vonni(pygame.sprite.Sprite):
     def __init__(self, sheet, columns, rows, x, y, x_cord):
         super().__init__(all_sprites)
@@ -316,7 +304,7 @@ class Vonni(pygame.sprite.Sprite):
         self.cut_sheet(sheet, columns, rows)
         self.cur_frame = 0
         self.image = self.frames[self.cur_frame]
-        #print(list(tiles_group)[x_cord].rect.y - 225, list(tiles_group)[x_cord].rect.y, x_cord, "VONNI COORDS")
+        # print(list(tiles_group)[x_cord].rect.y - 225, list(tiles_group)[x_cord].rect.y, x_cord, "VONNI COORDS")
         self.rect.y = list(tiles_group)[x_cord].rect.y - 225
         self.rect.x = list(tiles_group)[x_cord].rect.x
         self.rect = self.rect.move(x, y)
@@ -343,6 +331,7 @@ class Vonni(pygame.sprite.Sprite):
 
 class Honey(pygame.sprite.Sprite):
     image = load_image("honey.png", colorkey=-1)
+
     def __init__(self, x_got, y_got):
         super().__init__(all_sprites)
         self.image = Honey.image
@@ -350,70 +339,17 @@ class Honey(pygame.sprite.Sprite):
         self.start_pos = x_got
         self.rect.x = x_got
         self.rect.y = y_got
-        #print("GOT:", y_got)
+        # print("GOT:", y_got)
 
     def update(self, tot_time):
         self.rect = self.rect.move(-5, 0)
         if self.start_pos - self.rect.x > 300:
             self.kill()
 
-class Gangsta(pygame.sprite.Sprite):
-    def __init__(self, sheet, columns, rows, x, y, x_cord, lim):
-        self.x = x_cord
-        super().__init__(all_sprites)
-        self.frames = []
-        self.cut_sheet(sheet, columns, rows)
-        self.cur_frame = 0
-        self.image = self.frames[self.cur_frame]
-        self.rect.y = list(tiles_group)[x_cord].rect.y - 200 #225
-        self.rect.x = list(tiles_group)[x_cord].rect.x
-        self.rect = self.rect.move(x, y)
-        self.counter = 0
-        self.start_x = list(tiles_group)[x_cord].rect.x
-        self.limit = lim
-        self.a_x = 3
-
-    def cut_sheet(self, sheet, columns, rows):
-        self.rect = pygame.Rect(0, 0, sheet.get_width() // columns,
-                                sheet.get_height() // rows)
-        for j in range(rows):
-            for i in range(columns):
-                frame_location = (self.rect.w * i, self.rect.h * j)
-                self.frames.append(sheet.subsurface(pygame.Rect(
-                    frame_location, self.rect.size)))
-
-    def update(self, tot_time):
-        #self.start_y = 385
-        self.start_x = list(tiles_group)[self.x].rect.x
-        self.rect = self.rect.move(self.a_x, 0)
-        if self.rect.x > self.start_x + self.limit:
-            self.a_x = -3
-            self.cur_frame = (self.cur_frame + 1) % len(self.frames)
-            self.image = self.frames[self.cur_frame]
-        elif self.rect.x < self.start_x - self.limit:
-            self.a_x = 3
-            self.cur_frame = (self.cur_frame + 1) % len(self.frames)
-            self.image = pygame.transform.flip(self.frames[self.cur_frame], True, False)
-        if self.a_x > 0:
-            self.cur_frame = (self.cur_frame + 1) % len(self.frames)
-            self.image = pygame.transform.flip(self.frames[self.cur_frame], True, False)
-        else:
-            self.cur_frame = (self.cur_frame + 1) % len(self.frames)
-            self.image = self.frames[self.cur_frame]
-
-        # счётчик времени для выстрелов
-        if tot_time > 600:
-            self.counter += 1
-        if self.counter == 50:
-            self.counter = 0
-            if self.a_x > 0:
-                Bullet(self.rect.x, self.rect.y + 80, "right")
-            else:
-                Bullet(self.rect.x, self.rect.y + 80, "left")
-
 
 class Bullet(pygame.sprite.Sprite):
     image = load_image("bullet.png", colorkey=-1)
+
     def __init__(self, x, y, dim):
         super().__init__(all_sprites)
         self.start_pos = x
@@ -435,60 +371,6 @@ class Bullet(pygame.sprite.Sprite):
             self.rect = self.rect.move(7, 0)
             if self.rect.x - self.start_pos > 300:
                 self.kill()
-
-
-class Mushroom(pygame.sprite.Sprite):
-    def __init__(self, sheet, columns, rows, x, y, x_cord, lim):
-        self.x = x_cord
-        super().__init__(all_sprites)
-        self.frames = []
-        self.cut_sheet(sheet, columns, rows)
-        self.cur_frame = 0
-        self.image = self.frames[self.cur_frame]
-        self.rect.y = list(tiles_group)[x_cord].rect.y - 290  # 225
-        self.rect.x = list(tiles_group)[x_cord].rect.x
-        self.rect = self.rect.move(x, y)
-        self.counter = 0
-        self.start_x = list(tiles_group)[x_cord].rect.x
-        self.limit = lim
-        self.a_x = 3
-
-    def cut_sheet(self, sheet, columns, rows):
-        self.rect = pygame.Rect(0, 0, sheet.get_width() // columns,
-                                sheet.get_height() // rows)
-        for j in range(rows):
-            for i in range(columns):
-                frame_location = (self.rect.w * i, self.rect.h * j)
-                self.frames.append(sheet.subsurface(pygame.Rect(
-                    frame_location, self.rect.size)))
-
-    def update(self, tot_time):
-        self.start_x = list(tiles_group)[self.x].rect.x
-        self.rect = self.rect.move(self.a_x, 0)
-        if self.rect.x > self.start_x + self.limit:
-            self.a_x = -3
-            #self.cur_frame = (self.cur_frame + 1) % len(self.frames)
-            #self.image = self.frames[self.cur_frame]
-        elif self.rect.x < self.start_x - self.limit:
-            self.a_x = 3
-            #self.cur_frame = (self.cur_frame + 1) % len(self.frames)
-            #self.image = pygame.transform.flip(self.frames[self.cur_frame], True, False)
-        if self.a_x > 0:
-            self.cur_frame = (self.cur_frame + 1) % len(self.frames)
-            self.image = pygame.transform.flip(self.frames[self.cur_frame], True, False)
-        else:
-            self.cur_frame = (self.cur_frame + 1) % len(self.frames)
-            self.image = self.frames[self.cur_frame]
-
-        if tot_time > 800:
-            self.counter += 1
-        if self.counter == 50:
-            self.counter = 0
-            #Honey(self.rect.x, self.rect.y + 60)
-        #self.cur_frame = (self.cur_frame + 1) % len(self.frames)
-        #self.image = self.frames[self.cur_frame]
-
-
 
 
 def start_screen():
@@ -528,43 +410,40 @@ def start_screen():
                 pygame.quit()
                 sys.exit()
             elif event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
-                    return  # начинаем игру
+                return  # начинаем игру
         pygame.display.flip()
         clock.tick(fps)
 
-start_screen()
 
+start_screen()
 
 all_sprites = pygame.sprite.Group()
 earth = pygame.sprite.Group()
 running = True
 pleer = Elephant(all_sprites)
+lvl = 1
 pleer.earth = earth
 total_time = 0
-tiles_group = pygame.sprite.Group(earth)
-tile_images = {'roof': load_image('roof.png'), 'wall': load_image('wall.png'),
-                   "barrier": load_image("barrier.png", colorkey=-1), "pipe": load_image("pipe.png", colorkey=-1)}
+tiles_group = pygame.sprite.Group()
+tile_images = {'dirt': load_image('dirt.png', colorkey=-1), 'deep': load_image('deep.png', colorkey=-1),
+               "barrier": load_image("barrier.png", colorkey=-1), "finish": load_image("final_flag.png", colorkey=-1)}
 tile_width = 141
 tile_height = 64
-level_x, level_y = generate_level(load_level("2.txt"))
+level_x, level_y = generate_level(load_level("1.txt"))
 
-    # Генерация врагов
-    # генерация Спуди
-    # spoodies = [(56, 350), (69, 200), (79, 200), (91, 150)]
-    # for spoody in spoodies:
-    # Spoody(spoody[0], spoody[1], all_sprites)
+# Генерация врагов
+# генерация Спуди
+spoodies = [(56, 350), (69, 200), (79, 200), (91, 150)]
+for spoody in spoodies:
+    Spoody(spoody[0], spoody[1], all_sprites)
 
-    # генерация Вонни
-    # vonnis = [74, 18, 85, 14, 108]
-    # for vonni in vonnis:
-    # Vonni(load_image("vonni2.png", colorkey=-1), 16, 6, 50, 50, vonni)
-Gangsta(load_image("gangsta_sheet.png", colorkey=-1), 16, 2, 50, 50, 56, 200)
-#Bullet(600, 500, "left")
-#Honey(300, 470)
-Mushroom(load_image("mushroom_sheet.png", colorkey=-1), 16, 2, 50, 50, 50, 300)
+# генерация Вонни
+vonnis = [74, 18, 85, 14, 108]
+for vonni in vonnis:
+    Vonni(load_image("vonni2.png", colorkey=-1), 16, 6, 50, 50, vonni)
 
 camera = Camera((level_x, level_y))
-bg = pygame.transform.scale(load_image('bg2.png'), (1700, 800))
+bg = pygame.transform.scale(load_image('background.png'), (1700, 800))
 
 while running:
     for event in pygame.event.get():
@@ -577,13 +456,24 @@ while running:
         if event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT:
             pleer.right = True
         if event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN:
-            pleer.down = True
+            try:
+                for i in all_sprites:
+                    i.kill()
+                level_x, level_y = generate_level(load_level(str(lvl) + ".txt"))
+                pleer = Elephant(all_sprites)
+            except:
+                lvl = 0
+            lvl += 1
         if event.type == pygame.KEYUP and event.key == pygame.K_UP:
             pleer.up = False
         if event.type == pygame.KEYUP and event.key == pygame.K_RIGHT:
             pleer.right = False
         if event.type == pygame.KEYUP and event.key == pygame.K_LEFT:
             pleer.left = False
+        if event.type == pygame.KEYUP and event.key == pygame.K_DOWN:
+            print(pleer.moving, "PLEER")
+            if pleer.moving:
+                print("HITTING")
 
     camera.update(pleer)
     for sprite in all_sprites:

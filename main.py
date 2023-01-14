@@ -16,7 +16,7 @@ g = 10
 
 
 # Загрузка музыки
-# pygame.mixer.music.load(r"C:\Users\1\PycharmProjects\my_test_of_project\music\zoo.mp3")
+# pygame.mixer.music.load(r"music\zoo.mp3")
 # pygame.mixer.music.play()
 
 def load_image(name, colorkey=None):
@@ -69,14 +69,14 @@ def generate_level(level):
                 Tile('dirt', x, y)
             if level[y][x] == "!":
                 Tile("barrier", x, y)
-            """if level[y][x] == 's':
+            if level[y][x] == 's':
                 if s[0]:
                     s[0] = False
                     s[1] = x
                     s[2] += 1
             elif not s[0]:
-                Spoody(s[1], s[2], all_sprites)  # Spoody
-                s = [True, 0, 0]"""ыцу
+                Spoody(s[1]  * tile_width, s[2] * tile_width, all_sprites, enamis)  # Spoody
+                s = [True, 0, 0]
     return x, y
 
 
@@ -126,6 +126,7 @@ class Elephant(pygame.sprite.Sprite):
     image1 = load_image("elephant1.png", colorkey=-1)
     image2 = load_image("elephant2.png", colorkey=-1)
     image_hit = load_image("elephant_attack.png", colorkey=-1)
+    image_ded = load_image("elephant_death.png", colorkey=-1)
     image_move_hit1 = load_image("elephant_move_attack1.png", colorkey=-1)
     image_move_hit2 = load_image("elephant_move_attack2.png", colorkey=-1)
     uskor_x = 0
@@ -136,7 +137,7 @@ class Elephant(pygame.sprite.Sprite):
     left = False
     right = False
     down = False
-
+    is_ded = False
     def __init__(self, *group):
         super().__init__(*group)
         # self.image = Elephant.image
@@ -154,12 +155,28 @@ class Elephant(pygame.sprite.Sprite):
         self.im1 = Elephant.image1
         self.im2 = Elephant.image2
 
+
     def update(self, tot_time):
+        if type(pygame.sprite.spritecollideany(self, enamis)) == Spoody:
+            self.is_ded = True
+            self.image = self.image_ded
+            self.uskor_y = -500
+
+        if self.is_ded:
+            self.rect = self.rect.move(0, self.uskor_y // 100)
+            self.uskor_y += 10
+
+            return 'is_ded'
+
+        in_wall = True
         platform = pygame.sprite.spritecollideany(self, tiles_group)
         if platform:
-            print('"координаты"', platform.pos_x,  self.pos_x)
-            if 80 > matematics.fabs(self.rect.y - platform.rect.y):
-                self.uskor_x = -self.uskor_x
+            print('"координаты"', platform.rect.x,  self.rect.x)
+            if 80 > matematics.fabs(platform.rect.y - self.rect.y):
+                self.rect = self.rect.move((self.rect.x - platform.rect.x) // 100, 0)
+                self.uskor_x = -self.uskor_x // 10
+                in_wall = False
+
 
 
         if pygame.sprite.spritecollideany(
@@ -183,14 +200,15 @@ class Elephant(pygame.sprite.Sprite):
             self.rect = self.rect.move(self.uskor_x // 100, self.uskor_y // 100)
         if self.rect.y > 900:
             self.rect.y = 0
+        if self.uskor_y > 500:
+            self.uskor_y = 500
         if self.fall:
             self.uskor_y = self.uskor_y + g
             if self.uskor_x > 0:
                 self.uskor_x -= 1
             elif self.uskor_x < 0:
                 self.uskor_x += 1
-        if self.uskor_y > 500:
-            self.uskor_y = 500
+
 
         if self.moving:
             if True in list(pygame.key.get_pressed()):
@@ -233,11 +251,11 @@ class Elephant(pygame.sprite.Sprite):
                 self.moving = True
             else:
                 self.moving = False
-            if self.right:
+            if self.right and in_wall:
                 self.right = True
                 self.uskor_x = 300
                 self.moving = True
-            elif self.left:
+            elif self.left and in_wall:
                 self.right = False
                 self.uskor_x = -300
                 self.moving = True
@@ -263,11 +281,7 @@ class Spoody(pygame.sprite.Sprite):
         self.image = self.image_go
         self.rect = self.image.get_rect()
         self.start_y = 385
-        try:
-            self.start_x = list(tiles_group)[self.x].rect.x
-        except:
-            self.start_x = 50
-            print(self.x)
+        self.start_x = x
         self.rect.x = self.start_x
         self.rect.y = 465
         self.limit = lim
@@ -278,7 +292,6 @@ class Spoody(pygame.sprite.Sprite):
         # print("current", list(tiles_group)[20].rect.x,
         # "SPOODY", self.rect.x, self.start_x + self.limit, self.start_x - self.limit)
         self.start_y = 385  # list(tiles_group)[20].rect.y
-        self.start_x = list(tiles_group)[self.x].rect.x
         self.rect = self.rect.move(self.a_x, self.a_y)
         if self.rect.x > self.start_x + self.limit:
             self.a_x = -4
@@ -427,6 +440,7 @@ all_sprites = pygame.sprite.Group()
 earth = pygame.sprite.Group()
 running = True
 pleer = Elephant(all_sprites)
+enamis = pygame.sprite.Group()
 lvl = 1
 pleer.earth = earth
 total_time = 0

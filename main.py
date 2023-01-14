@@ -61,6 +61,7 @@ def load_map(name):
 def generate_level(level):
     x, y = None, None
     for y in range(len(level)):
+        s = [True, 0, 0] # s[0]-системное s[1]-начало s[2]-длина
         for x in range(len(level[y])):
             if level[y][x] == '.':
                 Tile('deep', x, y)
@@ -68,6 +69,14 @@ def generate_level(level):
                 Tile('dirt', x, y)
             if level[y][x] == "!":
                 Tile("barrier", x, y)
+            """if level[y][x] == 's':
+                if s[0]:
+                    s[0] = False
+                    s[1] = x
+                    s[2] += 1
+            elif not s[0]:
+                Spoody(s[1], s[2], all_sprites)  # Spoody
+                s = [True, 0, 0]"""
     return x, y
 
 
@@ -251,10 +260,14 @@ class Spoody(pygame.sprite.Sprite):
     def __init__(self, x, lim, *group):  # x - номер блока, который является нулём по оcи X для данного объекта спуди
         super().__init__(*group)
         self.x = x
-        self.image = Spoody.image_go
+        self.image = self.image_go
         self.rect = self.image.get_rect()
         self.start_y = 385
-        self.start_x = list(tiles_group)[self.x].rect.x
+        try:
+            self.start_x = list(tiles_group)[self.x].rect.x
+        except:
+            self.start_x = 50
+            print(self.x)
         self.rect.x = self.start_x
         self.rect.y = 465
         self.limit = lim
@@ -414,6 +427,7 @@ all_sprites = pygame.sprite.Group()
 earth = pygame.sprite.Group()
 running = True
 pleer = Elephant(all_sprites)
+lvl = 1
 pleer.earth = earth
 total_time = 0
 tiles_group = pygame.sprite.Group()
@@ -425,9 +439,9 @@ level_x, level_y = generate_level(load_level("1.txt"))
 
 # Генерация врагов
 # генерация Спуди
-spoodies = [(56, 350), (69, 200), (79, 200), (91, 150)]
-for spoody in spoodies:
-    Spoody(spoody[0], spoody[1], all_sprites)
+#spoodies = [(56, 350), (69, 200), (79, 200), (91, 150)]
+#for spoody in spoodies:
+#    Spoody(spoody[0], spoody[1], all_sprites)
 
 # генерация Вонни
 vonnis = [74, 18, 85, 14, 108]
@@ -448,7 +462,14 @@ while running:
         if event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT:
             pleer.right = True
         if event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN:
-            pleer.down = True
+            try:
+                for i in all_sprites:
+                    i.kill()
+                level_x, level_y = generate_level(load_level(str(lvl) + ".txt"))
+                pleer = Elephant(all_sprites)
+            except:
+                lvl = 0
+            lvl += 1
         if event.type == pygame.KEYUP and event.key == pygame.K_UP:
             pleer.up = False
         if event.type == pygame.KEYUP and event.key == pygame.K_RIGHT:

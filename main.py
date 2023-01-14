@@ -76,7 +76,7 @@ def generate_level(level):
                     s[2] += 1
             elif not s[0]:
                 Spoody(s[1], s[2], all_sprites)  # Spoody
-                s = [True, 0, 0]"""
+                s = [True, 0, 0]"""ыцу
     return x, y
 
 

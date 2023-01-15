@@ -78,7 +78,7 @@ def generate_level(level):
                 #Spoody(s[1] * tile_width, s[2] * tile_width, all_sprites, enamis)  # Spoody
                 Spoody(s[1], s[2], all_sprites, enamis)  # Spoody
                 s = [True, 0, 0]
-            if level[y][x] == 'F':
+            if level[y][x] == 'f':
                 Flag(x * tile_width, (y - 1) * tile_height, all_sprites)
     return x, y
 
@@ -93,7 +93,8 @@ class Camera:
     # сдвинуть объект obj на смещение камеры
     def apply(self, obj):
         # print(type(obj) == Spoody, "TYPE")
-        obj.rect.x += self.dx
+        if type(obj) != Potracheno:
+            obj.rect.x += self.dx
         # вычислим координату клeтки, если она уехала вверх за границу экрана
         if type(obj) != Bullet:
             if obj.rect.y < -obj.rect.height:
@@ -123,6 +124,15 @@ class Tile(pygame.sprite.Sprite):
         self.pos_y = pos_y * tile_height
         self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
 
+class Potracheno(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__(tiles_group, all_sprites)
+        print("END OF GAME")
+        self.image = load_image("potracheno.png")
+        self.rect = self.image.get_rect()
+        self.rect.x = 400
+        self.rect.y = 300
+
 
 class Elephant(pygame.sprite.Sprite):
     image = load_image("elephant.png", colorkey=-1)
@@ -132,6 +142,7 @@ class Elephant(pygame.sprite.Sprite):
     image_ded = load_image("elephant_death.png", colorkey=-1)
     image_move_hit1 = load_image("elephant_move_attack1.png", colorkey=-1)
     image_move_hit2 = load_image("elephant_move_attack2.png", colorkey=-1)
+    potracheno = load_image("potracheno.png")
     uskor_x = 0
     uskor_y = 0
     fall = False
@@ -168,13 +179,12 @@ class Elephant(pygame.sprite.Sprite):
         if self.is_ded:
             self.rect = self.rect.move(0, self.uskor_y // 100)
             self.uskor_y += 10
-
             return 'is_ded'
 
         in_wall = True
         platform = pygame.sprite.spritecollideany(self, tiles_group)
         if platform:
-            print('"координаты"', platform.rect.x,  self.rect.x)
+            #print('"координаты"', platform.rect.x,  self.rect.x)
             if 80 > matematics.fabs(platform.rect.y - self.rect.y):
                 self.rect = self.rect.move((self.rect.x - platform.rect.x) // 100, 0)
                 self.uskor_x = -self.uskor_x // 10
@@ -202,7 +212,9 @@ class Elephant(pygame.sprite.Sprite):
             self.fall = True
             self.rect = self.rect.move(self.uskor_x // 100, self.uskor_y // 100)
         if self.rect.y > 900:
-            self.rect.y = 0
+            self.kill()
+            Potracheno()
+            print("WASTED")
         if self.uskor_y > 500:
             self.uskor_y = 500
         if self.fall:
@@ -271,7 +283,7 @@ class Elephant(pygame.sprite.Sprite):
                 self.rect.x += Elephant.image_hit.get_rect().width - Elephant.image2.get_rect().width
                 self.changed_x = False
 class Flag(pygame.sprite.Sprite):
-    image_1 = load_image("flag.jpg", colorkey=-1)
+    image_1 = load_image("final_flag.png", colorkey=-1)
     def __init__(self, x, y, *group):  # x - номер блока, который является нулём по оcи X для данного объекта спуди
         super().__init__(*group)
         self.x = x
@@ -292,7 +304,8 @@ class Spoody(pygame.sprite.Sprite):
         self.image = self.image_go
         self.rect = self.image.get_rect()
         self.start_y = 385
-        self.start_x = x
+        print()
+        self.start_x = list(tiles_group)[self.x].rect.x
         self.rect.x = self.start_x
         self.rect.y = 465
         self.limit = lim
@@ -303,6 +316,7 @@ class Spoody(pygame.sprite.Sprite):
         # print("current", list(tiles_group)[20].rect.x,
         # "SPOODY", self.rect.x, self.start_x + self.limit, self.start_x - self.limit)
         self.start_y = 385  # list(tiles_group)[20].rect.y
+        self.start_x = list(tiles_group)[self.x].rect.x
         self.rect = self.rect.move(self.a_x, self.a_y)
         if self.rect.x > self.start_x + self.limit:
             self.a_x = -4
@@ -464,9 +478,9 @@ level_x, level_y = generate_level(load_level("1.txt"))
 
 # Генерация врагов
 # генерация Спуди
-#spoodies = [(56, 350), (69, 200), (79, 200), (91, 150)]
-#for spoody in spoodies:
-#    Spoody(spoody[0], spoody[1], all_sprites)
+spoodies = [(56, 350), (69, 200), (79, 200), (91, 150)]
+for spoody in spoodies:
+    Spoody(spoody[0], spoody[1], all_sprites)
 # генерация Вонни
 vonnis = [74, 18, 85, 14, 108]
 for vonni in vonnis:
@@ -486,14 +500,21 @@ while running:
         if event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT:
             pleer.right = True
         if event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN:
-            try:
-                for i in all_sprites:
-                    i.kill()
-                level_x, level_y = generate_level(load_level(str(lvl) + ".txt"))
-                pleer = Elephant(all_sprites)
-            except:
-                lvl = 0
+            # Переключение уровней
+            #try:
+            print("number of level", lvl)
+            if lvl == 4:
+                lvl = 1
+            #if lvl < 4:
+            print("LEVEL", lvl)
+            for i in all_sprites:
+                i.kill()
+            level_x, level_y = generate_level(load_level(str(lvl) + ".txt"))
+            pleer = Elephant(all_sprites)
             lvl += 1
+            #else:
+                #lvl = 1
+            #lvl += 1
         if event.type == pygame.KEYUP and event.key == pygame.K_UP:
             pleer.up = False
         if event.type == pygame.KEYUP and event.key == pygame.K_RIGHT:

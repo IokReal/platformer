@@ -58,18 +58,26 @@ def load_map(name):
     return maps
 
 
-def generate_level(level):
+def generate_level(level, number_of_level):
     x, y = None, None
     for y in range(len(level)):
         s = [True, 0, 0] # s[0]-системное s[1]-начало s[2]-длина
         for x in range(len(level[y])):
-            if level[y][x] == '.':
-                Tile('deep', x, y)
-            if level[y][x] == '#':
-                Tile('dirt', x, y)
+            if number_of_level == 1:
+                if level[y][x] == '.':
+                    Tile('deep', x, y)
+                if level[y][x] == '#':
+                    Tile('dirt', x, y)
+            elif number_of_level == 2:
+                if level[y][x] == '.':
+                    Tile('wall', x, y)
+                if level[y][x] == '#':
+                    Tile('roof', x, y)
             if level[y][x] == "!":
                 Tile("barrier", x, y)
-            if level[y][x] == 's':
+            if level[y][x] == "@":
+                Tile("pipe", x, y)
+            '''if level[y][x] == 's':
                 if s[0]:
                     s[0] = False
                     s[1] = x
@@ -77,7 +85,7 @@ def generate_level(level):
             elif s[0] == False:
                 #Spoody(s[1] * tile_width, s[2] * tile_width, all_sprites, enamis)  # Spoody
                 Spoody(s[1], s[2], all_sprites, enamis)  # Spoody
-                s = [True, 0, 0]
+                s = [True, 0, 0]'''
             if level[y][x] == 'f':
                 Flag(x * tile_width, (y - 1) * tile_height, all_sprites)
     return x, y
@@ -120,9 +128,16 @@ class Tile(pygame.sprite.Sprite):
     def __init__(self, tile_type, pos_x, pos_y):
         super().__init__(tiles_group, all_sprites)
         self.image = tile_images[tile_type]
-        self.pos_x = pos_x * tile_width
+        '''self.pos_x = pos_x * tile_width
         self.pos_y = pos_y * tile_height
-        self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
+        self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)'''
+        if tile_type == "deep":
+            self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
+        elif tile_type == "pipe":
+            print("PIPE")
+            self.rect = self.image.get_rect().move(tile_width * pos_x, 0)
+        elif tile_type:
+            self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
 
 class Potracheno(pygame.sprite.Sprite):
     def __init__(self):
@@ -153,7 +168,7 @@ class Elephant(pygame.sprite.Sprite):
     down = False
     is_ded = 0
     def __init__(self, *group):
-        super().__init__(*group)
+        super().__init__(*group, all_sprites)
         # self.image = Elephant.image
         self.image = Elephant.image
         self.rect = self.image.get_rect()
@@ -193,7 +208,16 @@ class Elephant(pygame.sprite.Sprite):
 
 
         if pygame.sprite.spritecollideany(
-                self, tiles_group) and self.fall:  # обработка соприкосновений с блоками по вертикали
+                self, tiles_group) and self.fall:
+            # обработка столкновений с врагами
+            print(pygame.sprite.spritecollideany(self, all_sprites))
+            if type(pygame.sprite.spritecollideany(self, all_sprites)) in [Spoody, Mushroom, Vonni, Gangsta]:
+                self.kill()
+                Potracheno()
+
+
+
+            # обработка соприкосновений с блоками по вертикали
             if pygame.sprite.spritecollideany(self, tiles_group).rect.y > self.rect.y:
                 self.rect = self.rect.move(self.uskor_x // 100, self.uskor_y // 100)
                 self.pos_x += self.uskor_y // 100
@@ -391,9 +415,63 @@ class Honey(pygame.sprite.Sprite):
             self.kill()
 
 
+class Gangsta(pygame.sprite.Sprite):
+    def __init__(self, sheet, columns, rows, x, y, x_cord, lim):
+        self.x = x_cord
+        super().__init__(all_sprites)
+        self.frames = []
+        self.cut_sheet(sheet, columns, rows)
+        self.cur_frame = 0
+        self.image = self.frames[self.cur_frame]
+        self.rect.y = list(tiles_group)[x_cord].rect.y - 200 #225
+        self.rect.x = list(tiles_group)[x_cord].rect.x
+        self.rect = self.rect.move(x, y)
+        self.counter = 0
+        self.start_x = list(tiles_group)[x_cord].rect.x
+        self.limit = lim
+        self.a_x = 3
+
+    def cut_sheet(self, sheet, columns, rows):
+        self.rect = pygame.Rect(0, 0, sheet.get_width() // columns,
+                                sheet.get_height() // rows)
+        for j in range(rows):
+            for i in range(columns):
+                frame_location = (self.rect.w * i, self.rect.h * j)
+                self.frames.append(sheet.subsurface(pygame.Rect(
+                    frame_location, self.rect.size)))
+
+    def update(self, tot_time):
+        #self.start_y = 385
+        self.start_x = list(tiles_group)[self.x].rect.x
+        self.rect = self.rect.move(self.a_x, 0)
+        if self.rect.x > self.start_x + self.limit:
+            self.a_x = -3
+            self.cur_frame = (self.cur_frame + 1) % len(self.frames)
+            self.image = self.frames[self.cur_frame]
+        elif self.rect.x < self.start_x - self.limit:
+            self.a_x = 3
+            self.cur_frame = (self.cur_frame + 1) % len(self.frames)
+            self.image = pygame.transform.flip(self.frames[self.cur_frame], True, False)
+        if self.a_x > 0:
+            self.cur_frame = (self.cur_frame + 1) % len(self.frames)
+            self.image = pygame.transform.flip(self.frames[self.cur_frame], True, False)
+        else:
+            self.cur_frame = (self.cur_frame + 1) % len(self.frames)
+            self.image = self.frames[self.cur_frame]
+
+        # счётчик времени для выстрелов
+        if tot_time > 600:
+            self.counter += 1
+        if self.counter == 50:
+            self.counter = 0
+            if self.a_x > 0:
+                Bullet(self.rect.x, self.rect.y + 80, "right")
+            else:
+                Bullet(self.rect.x, self.rect.y + 80, "left")
+
+
 class Bullet(pygame.sprite.Sprite):
     image = load_image("bullet.png", colorkey=-1)
-
     def __init__(self, x, y, dim):
         super().__init__(all_sprites)
         self.start_pos = x
@@ -415,6 +493,58 @@ class Bullet(pygame.sprite.Sprite):
             self.rect = self.rect.move(7, 0)
             if self.rect.x - self.start_pos > 300:
                 self.kill()
+
+
+class Mushroom(pygame.sprite.Sprite):
+    def __init__(self, sheet, columns, rows, x, y, x_cord, lim):
+        self.x = x_cord
+        super().__init__(all_sprites)
+        self.frames = []
+        self.cut_sheet(sheet, columns, rows)
+        self.cur_frame = 0
+        self.image = self.frames[self.cur_frame]
+        self.rect.y = list(tiles_group)[x_cord].rect.y - 290  # 225
+        self.rect.x = list(tiles_group)[x_cord].rect.x
+        self.rect = self.rect.move(x, y)
+        self.counter = 0
+        self.start_x = list(tiles_group)[x_cord].rect.x
+        self.limit = lim
+        self.a_x = 3
+
+    def cut_sheet(self, sheet, columns, rows):
+        self.rect = pygame.Rect(0, 0, sheet.get_width() // columns,
+                                sheet.get_height() // rows)
+        for j in range(rows):
+            for i in range(columns):
+                frame_location = (self.rect.w * i, self.rect.h * j)
+                self.frames.append(sheet.subsurface(pygame.Rect(
+                    frame_location, self.rect.size)))
+
+    def update(self, tot_time):
+        self.start_x = list(tiles_group)[self.x].rect.x
+        self.rect = self.rect.move(self.a_x, 0)
+        if self.rect.x > self.start_x + self.limit:
+            self.a_x = -3
+            #self.cur_frame = (self.cur_frame + 1) % len(self.frames)
+            #self.image = self.frames[self.cur_frame]
+        elif self.rect.x < self.start_x - self.limit:
+            self.a_x = 3
+            #self.cur_frame = (self.cur_frame + 1) % len(self.frames)
+            #self.image = pygame.transform.flip(self.frames[self.cur_frame], True, False)
+        if self.a_x > 0:
+            self.cur_frame = (self.cur_frame + 1) % len(self.frames)
+            self.image = pygame.transform.flip(self.frames[self.cur_frame], True, False)
+        else:
+            self.cur_frame = (self.cur_frame + 1) % len(self.frames)
+            self.image = self.frames[self.cur_frame]
+
+        if tot_time > 800:
+            self.counter += 1
+        if self.counter == 50:
+            self.counter = 0
+            #Honey(self.rect.x, self.rect.y + 60)
+        #self.cur_frame = (self.cur_frame + 1) % len(self.frames)
+        #self.image = self.frames[self.cur_frame]
 
 
 def start_screen():
@@ -466,15 +596,21 @@ earth = pygame.sprite.Group()
 running = True
 pleer = Elephant(all_sprites)
 enamis = pygame.sprite.Group()
-lvl = 1
+lvl = 2
 pleer.earth = earth
 total_time = 0
 tiles_group = pygame.sprite.Group()
-tile_images = {'dirt': load_image('dirt.png', colorkey=-1), 'deep': load_image('deep.png', colorkey=-1),
-               "barrier": load_image("barrier.png", colorkey=-1)}
+tile_images = { # Картинки первого уровня
+    'dirt': load_image('level1/first.png', colorkey=-1),
+    'deep': load_image('level1/second.png', colorkey=-1),
+    "barrier": load_image("level1/barrier.png", colorkey=-1),
+    # Картинки второго уровня
+    'roof': load_image('level2/first.png'),
+    'wall': load_image('level2/second.png'),
+    "pipe": load_image("level2/barrier.png", colorkey=-1)}
 tile_width = 141
 tile_height = 64
-level_x, level_y = generate_level(load_level("1.txt"))
+level_x, level_y = generate_level(load_level("1.txt"), 1)
 
 # Генерация врагов
 # генерация Спуди
@@ -502,17 +638,41 @@ while running:
         if event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN:
             # Переключение уровней
             #try:
-            print("number of level", lvl)
-            if lvl == 4:
+            if lvl == 3:
                 lvl = 1
-            #if lvl < 4:
-            print("LEVEL", lvl)
+            print("number of level", lvl)
+
             for i in all_sprites:
                 i.kill()
-            level_x, level_y = generate_level(load_level(str(lvl) + ".txt"))
+            level_x, level_y = generate_level(load_level(str(lvl) + ".txt"), lvl)
             pleer = Elephant(all_sprites)
+            if lvl == 1:
+                bg = pygame.transform.scale(load_image('background.png'), (1700, 800))
+                # генерация Спуди
+                spoodies = [(56, 350), (69, 200), (79, 200), (91, 150)]
+                for spoody in spoodies:
+                    Spoody(spoody[0], spoody[1], all_sprites)
+                # генерация Вонни
+                vonnis = [74, 18, 85, 14, 108]
+                for vonni in vonnis:
+                    Vonni(load_image("vonni2.png", colorkey=-1), 16, 6, 50, 50, vonni)
+            elif lvl == 2:
+                bg = pygame.transform.scale(load_image('bg2.png'), (1700, 800))
+                # генерация гангстеров
+                gangsters = [(57, 200), (70, 180), (80, 200), (90, 200)]
+                for gangster in gangsters:
+                    Gangsta(load_image("gangsta_sheet.png", colorkey=-1), 16, 2, 50, 50, gangster[0], gangster[1])
+                # генерация грибов
+                mushrooms = [(46, 200), (51, 300), (63, 180), (70, 200), (89, 200), (97, 200)]
+                for mushroom in mushrooms:
+                    Mushroom(load_image("mushroom_sheet.png", colorkey=-1), 16, 2, 50, 50, mushroom[0], mushroom[1])
+
+
+
             lvl += 1
-            #else:
+
+
+            #if lvl < 4:
                 #lvl = 1
             #lvl += 1
         if event.type == pygame.KEYUP and event.key == pygame.K_UP:

@@ -425,7 +425,7 @@ lvl = 1
 pleer.earth = earth
 total_time = 0
 tiles_group = pygame.sprite.Group()
-tile_images = {'dirt': load_image('dirt.png', colorkey=-1), 'deep': load_image('deep.png', colorkey=-1),
+tile_images = {'dirt': load_image('first.png', colorkey=-1), 'deep': load_image('second.png', colorkey=-1),
                "barrier": load_image("barrier.png", colorkey=-1), "finish": load_image("final_flag.png", colorkey=-1)}
 tile_width = 141
 tile_height = 64

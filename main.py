@@ -74,9 +74,12 @@ def generate_level(level):
                     s[0] = False
                     s[1] = x
                     s[2] += 1
-            elif not s[0]:
-                Spoody(s[1]  * tile_width, s[2] * tile_width, all_sprites, enamis)  # Spoody
+            elif s[0] == False:
+                #Spoody(s[1] * tile_width, s[2] * tile_width, all_sprites, enamis)  # Spoody
+                Spoody(s[1], s[2], all_sprites, enamis)  # Spoody
                 s = [True, 0, 0]
+            if level[y][x] == 'F':
+                Flag(x * tile_width, (y - 1) * tile_height, all_sprites)
     return x, y
 
 
@@ -137,7 +140,7 @@ class Elephant(pygame.sprite.Sprite):
     left = False
     right = False
     down = False
-    is_ded = False
+    is_ded = 0
     def __init__(self, *group):
         super().__init__(*group)
         # self.image = Elephant.image
@@ -157,8 +160,8 @@ class Elephant(pygame.sprite.Sprite):
 
 
     def update(self, tot_time):
-        if type(pygame.sprite.spritecollideany(self, enamis)) == Spoody:
-            self.is_ded = True
+        if type(pygame.sprite.spritecollideany(self, enamis)) == Spoody and self.is_ded < 5:
+            self.is_ded += 1
             self.image = self.image_ded
             self.uskor_y = -500
 
@@ -267,7 +270,15 @@ class Elephant(pygame.sprite.Sprite):
             if self.changed_x and pygame.sprite.spritecollideany(self, tiles_group):
                 self.rect.x += Elephant.image_hit.get_rect().width - Elephant.image2.get_rect().width
                 self.changed_x = False
-
+class Flag(pygame.sprite.Sprite):
+    image_1 = load_image("flag.jpg", colorkey=-1)
+    def __init__(self, x, y, *group):  # x - номер блока, который является нулём по оcи X для данного объекта спуди
+        super().__init__(*group)
+        self.x = x
+        self.image = self.image_1
+        self.rect = self.image.get_rect()
+        self.rect.x = self.x
+        self.rect.y = y
 
 class Spoody(pygame.sprite.Sprite):
     image_go = load_image("spoody.png", colorkey=-1)
@@ -456,7 +467,6 @@ level_x, level_y = generate_level(load_level("1.txt"))
 #spoodies = [(56, 350), (69, 200), (79, 200), (91, 150)]
 #for spoody in spoodies:
 #    Spoody(spoody[0], spoody[1], all_sprites)
-
 # генерация Вонни
 vonnis = [74, 18, 85, 14, 108]
 for vonni in vonnis:

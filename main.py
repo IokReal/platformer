@@ -2,8 +2,6 @@ import os
 import sys
 import pygame
 import math as matematics
-import csv
-from pygame import *
 
 
 # Подключение текстовому файлу
@@ -24,8 +22,8 @@ lvl = 1
 
 
 # Загрузка музыки
-# pygame.mixer.music.load(r"music\zoo.mp3")
-# pygame.mixer.music.play()
+pygame.mixer.music.load(r"music\zoo.mp3")
+pygame.mixer.music.play()
 
 def load_image(name, colorkey=None):
     fullname = os.path.join("data", name)
@@ -59,7 +57,7 @@ def load_level(filename):
 def load_map(name):
     fullname = os.path.join("maps", name)
     if not os.path.isfile(fullname):
-        print("файл не существует")
+        print("карта не существует")
         sys.exit()
     else:
         maps = open(fullname)
@@ -86,7 +84,6 @@ def generate_level(level, number_of_level):
             if level[y][x] == "@":
                 Tile("pipe", x, y)
             if level[y][x] == 'f':
-                print("SPAWN OF THE FLAG!!!")
                 Flag(x * tile_width, (y - 1) * tile_height, lvl, all_sprites)
     return x, y
 
@@ -113,12 +110,6 @@ class Camera:
 
     # позиционировать камеру на объекте target
     def update(self, target):
-        # if type(target) == Elephant:
-        # if target.changed_x != True:
-        # print("THIS")
-        # self.dx = -(target.rect.x + target.rect.w // 2 - WIDTH // 2)
-        # else:
-        # if pleer.changed_x != True:
         self.dx = -(target.rect.x + target.rect.w // 2 - WIDTH // 2)
         if type(target) != Bullet:
             self.dy = -(target.rect.y + target.rect.h // 2 - HEIGHT // 2)
@@ -128,13 +119,9 @@ class Tile(pygame.sprite.Sprite):
     def __init__(self, tile_type, pos_x, pos_y):
         super().__init__(tiles_group, all_sprites)
         self.image = tile_images[tile_type]
-        '''self.pos_x = pos_x * tile_width
-        self.pos_y = pos_y * tile_height
-        self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)'''
         if tile_type == "deep":
             self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
         elif tile_type == "pipe":
-            print("PIPE")
             self.rect = self.image.get_rect().move(tile_width * pos_x, 0)
         elif tile_type:
             self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
@@ -144,15 +131,11 @@ class Potracheno(pygame.sprite.Sprite):
         global total_score1
         global total_score2
         global lvl
-        print(lvl, "FINISHED ON LEVEL")
         if lvl == 1:
-            print("ZERO1")
             total_score1 = 0
         elif lvl == 2:
-            print("ZERO2")
             total_score2 = 0
         super().__init__(tiles_group, all_sprites)
-        print("END OF GAME")
         self.image = load_image("potracheno.png")
         self.rect = self.image.get_rect()
         self.rect.x = 400
@@ -198,11 +181,9 @@ class Elephant(pygame.sprite.Sprite):
         global total_score1
         global total_score2
         global lvl
-        print(total_score1 + total_score2, "SCORE")
         if self.rect.y > 900:
             self.kill()
             Potracheno()
-            print("WASTED")
         enami = pygame.sprite.spritecollideany(self, enamis)
         if enami and self.is_ded < 5:
             if self.shoot:
@@ -212,10 +193,8 @@ class Elephant(pygame.sprite.Sprite):
                     self.moving = False
                     self.shoot = False
                 elif type(enami) == Spoody or type(enami) == Mushroom:
-                    print("kill")
                     enami.kill()
                     if lvl == 1:
-                        print("KILLED FROM 1")
                         total_score1 += 10
                     elif lvl == 2:
                         total_score2 += 10
@@ -228,10 +207,8 @@ class Elephant(pygame.sprite.Sprite):
             else:
                 self.is_ded += 1
                 if lvl == 1:
-                    print("ZERO1")
                     total_score1 = 0
                 elif lvl == 2:
-                    print("ZERO2")
                     total_score2 = 0
                 self.image = self.image_ded
                 self.uskor_y = -500
@@ -244,7 +221,6 @@ class Elephant(pygame.sprite.Sprite):
         in_wall = True
         platform = pygame.sprite.spritecollideany(self, tiles_group)
         if platform:
-            #print('"координаты"', platform.rect.x,  self.rect.x)
             if 80 > matematics.fabs(platform.rect.y - self.rect.y):
                 self.rect = self.rect.move((self.rect.x - platform.rect.x) // 100, 0)
                 self.uskor_x = -self.uskor_x // 10
@@ -261,7 +237,7 @@ class Elephant(pygame.sprite.Sprite):
             elif platform.rect.y < self.rect.y and self.rect.y - platform.rect.y < platform.rect.height:
                 self.fall = True
                 self.rect.y = platform.rect.y + platform.rect.height
-                self.uskor_y = 0  # /= 2
+                self.uskor_y = 0
         else:
             self.fall = True
             self.rect = self.rect.move(self.uskor_x // 100, self.uskor_y // 100)
@@ -304,7 +280,6 @@ class Elephant(pygame.sprite.Sprite):
                     self.image = pygame.transform.flip(Elephant.image_hit, True, False)
                     if not self.changed_x:
                         if pygame.sprite.spritecollideany(self, tiles_group):
-                            # if not self.moving:
                             self.rect.x -= Elephant.image_hit.get_rect().width - Elephant.image2.get_rect().width
                             self.changed_x = True
             if self.up and not self.fall:
@@ -346,7 +321,6 @@ class Flag(pygame.sprite.Sprite):
         self.rect.y = y
         self.lvl = lvl
     def update(self, *a):
-        #print(pygame.sprite.spritecollideany(self, pleers))
         if type(pygame.sprite.spritecollideany(self, pleers)) == Elephant:
             next_lvl(True)
 
@@ -363,7 +337,6 @@ class Spoody(pygame.sprite.Sprite):
         self.image = self.image_go
         self.rect = self.image.get_rect()
         self.start_y = 385
-        print()
         self.start_x = list(tiles_group)[self.x].rect.x
         self.rect.x = self.start_x
         self.rect.y = 465
@@ -372,15 +345,12 @@ class Spoody(pygame.sprite.Sprite):
         self.a_x = 4
 
     def update(self, tot_time):
-        # print("current", list(tiles_group)[20].rect.x,
-        # "SPOODY", self.rect.x, self.start_x + self.limit, self.start_x - self.limit)
-        self.start_y = 385  # list(tiles_group)[20].rect.y
+        self.start_y = 385
         self.start_x = list(tiles_group)[self.x].rect.x
         self.rect = self.rect.move(self.a_x, self.a_y)
         if self.rect.x > self.start_x + self.limit:
             self.a_x = -4
         elif self.rect.x < self.start_x - self.limit:
-            # print("по ОСИ")
             self.a_x = 4
             self.image = Spoody.image_go_back
         if self.rect.y < self.start_y - 5:
@@ -407,7 +377,6 @@ class Vonni(pygame.sprite.Sprite):
         self.cut_sheet(sheet, columns, rows)
         self.cur_frame = 0
         self.image = self.frames[self.cur_frame]
-        # print(list(tiles_group)[x_cord].rect.y - 225, list(tiles_group)[x_cord].rect.y, x_cord, "VONNI COORDS")
         self.rect.y = list(tiles_group)[x_cord].rect.y - 225
         self.rect.x = list(tiles_group)[x_cord].rect.x
         self.rect = self.rect.move(x, y)
@@ -442,7 +411,6 @@ class Honey(pygame.sprite.Sprite):
         self.start_pos = x_got
         self.rect.x = x_got
         self.rect.y = y_got
-        # print("GOT:", y_got)
 
     def update(self, tot_time):
         self.rect = self.rect.move(-5, 0)
@@ -476,7 +444,6 @@ class Gangsta(pygame.sprite.Sprite):
                     frame_location, self.rect.size)))
 
     def update(self, tot_time):
-        #self.start_y = 385
         self.start_x = list(tiles_group)[self.x].rect.x
         self.rect = self.rect.move(self.a_x, 0)
         if self.rect.x > self.start_x + self.limit:
@@ -559,12 +526,8 @@ class Mushroom(pygame.sprite.Sprite):
         self.rect = self.rect.move(self.a_x, 0)
         if self.rect.x > self.start_x + self.limit:
             self.a_x = -3
-            #self.cur_frame = (self.cur_frame + 1) % len(self.frames)
-            #self.image = self.frames[self.cur_frame]
         elif self.rect.x < self.start_x - self.limit:
             self.a_x = 3
-            #self.cur_frame = (self.cur_frame + 1) % len(self.frames)
-            #self.image = pygame.transform.flip(self.frames[self.cur_frame], True, False)
         if self.a_x > 0:
             self.cur_frame = (self.cur_frame + 1) % len(self.frames)
             self.image = pygame.transform.flip(self.frames[self.cur_frame], True, False)
@@ -576,9 +539,6 @@ class Mushroom(pygame.sprite.Sprite):
             self.counter += 1
         if self.counter == 50:
             self.counter = 0
-            #Honey(self.rect.x, self.rect.y + 60)
-        #self.cur_frame = (self.cur_frame + 1) % len(self.frames)
-        #self.image = self.frames[self.cur_frame]
 
 
 def start_screen():
@@ -589,7 +549,10 @@ def start_screen():
                   "                                                           ^",
                   "Для прыжка использовать стрелку |",
                   "Для удара использовать пробел ",
-                  "(БИТЬ ВРАГА НЕВОЗМОЖНО ПРИ ДВИЖЕНИИ)"
+                  "", "", "", "",
+                  "Зелёный слоник - инопланетное существо,",
+                  "заключённое людьми в зоопарке.",
+                  "Помогите ему сбежать на родную планету!",
                   "", "", "", "",
                   "Ну что, народ, погнали?!",
                   "Для начала игры нажмите любую клавишу"]
@@ -639,7 +602,6 @@ def end_screen():
 def next_lvl(go):
     # Переключение уровней
     global lvl, level_x, level_y, pleer
-    print("number of level", lvl)
     if go and lvl == 2:
         pygame.quit()
         #sys.exit()
@@ -648,15 +610,13 @@ def next_lvl(go):
         lvl = 2
     if lvl == 4:
         lvl = 1
-    print("LEVEL", lvl)
     for i in all_sprites:
         i.kill()
     level_x, level_y = generate_level(load_level(str(lvl) + ".txt"), lvl)
     if lvl == 1:
-        print("GENERSTION FIRST")
         bg = pygame.transform.scale(load_image('background.png'), (1700, 800))
         screen.blit(bg, (0, 0))
-        # генерация Спуди(56, 350),(69, 200),(79, 200), (91, 150)
+        # генерация Спуди
         spoodies = [(56, 350),(69, 200),(79, 200), (91, 150)]
         for spoody in spoodies:
             Spoody(spoody[0], spoody[1], all_sprites, enamis)
